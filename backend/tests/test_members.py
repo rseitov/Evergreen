@@ -32,6 +32,23 @@ def test_add_unknown_user_returns_404(client):
     assert resp.status_code == 404
 
 
+def test_add_duplicate_member_returns_409(client):
+    owner = _signup(client, "owner@acme.com")
+    _signup(client, "ops@acme.com", org="Temp")
+    org_id = owner["org_id"]
+    h = {"Authorization": f"Bearer {owner['access_token']}"}
+
+    resp = client.post(
+        f"/orgs/{org_id}/members", json={"email": "ops@acme.com", "role": "editor"}, headers=h
+    )
+    assert resp.status_code == 201
+
+    resp2 = client.post(
+        f"/orgs/{org_id}/members", json={"email": "ops@acme.com", "role": "editor"}, headers=h
+    )
+    assert resp2.status_code == 409
+
+
 def test_editor_cannot_add_members(client):
     owner = _signup(client, "owner@acme.com")
     _signup(client, "ed@acme.com", org="Temp")
