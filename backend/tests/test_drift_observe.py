@@ -135,3 +135,35 @@ def test_observe_unknown_step_404(client):
         assert resp.status_code == 404
     finally:
         _clear()
+
+
+def test_stale_drift_succeeds_when_redraft_fails(client):
+    from app.ai.errors import AIGenerationError
+
+    class _RedraftFailsAIClient:
+        def redraft_step(self, old_text, fresh_anchor):
+            raise AIGenerationError("model refused the request")
+
+    org_id, step_id, h = _guide_with_step(client)
+    app.dependency_overrides[get_ai_client] = lambda: _RedraftFailsAIClient()
+    try:
+        resp = client.post(
+            f"/orgs/{org_id}/drift/observe",
+            json={
+                "step_id": step_id,
+                "fresh_fingerprint": {
+                    "dom_anchor": {"role": "link", "text": "Готово", "selector": "#done"},
+                    "semantics": "x",
+                    "screenshot_url": None,
+                },
+            },
+            headers=h,
+        )
+        # observation still succeeds; the event is created with no draft
+        assert resp.status_code == 201
+        assert resp.json()["classification"] == "stale"
+        events = client.get(f"/orgs/{org_id}/drift?status=open", headers=h).json()
+        assert len(events) == 1
+        assert events[0]["draft_text"] is None
+    finally:
+        _clear()
