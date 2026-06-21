@@ -10,8 +10,10 @@ from app.schemas.guide import (
     GuideCreate,
     GuideDetail,
     GuideSummary,
+    NewVersionRequest,
     StepInput,
     StepOut,
+    VersionSummary,
 )
 
 router = APIRouter(prefix="/orgs/{org_id}", tags=["guides"])
@@ -119,4 +121,50 @@ def list_guides(
             created_at=g.created_at,
         )
         for g in rows
+    ]
+
+
+@router.post("/guides/{guide_id}/versions", response_model=GuideDetail, status_code=201)
+def create_version(
+    org_id: str,
+    guide_id: str,
+    payload: NewVersionRequest,
+    membership: Membership = Depends(require_role("editor")),
+    db: Session = Depends(get_db),
+) -> GuideDetail:
+    guide = get_guide_or_404(db, org_id, guide_id)
+    last = db.execute(
+        select(GuideVersion)
+        .where(GuideVersion.guide_id == guide.id)
+        .order_by(GuideVersion.version_number.desc())
+    ).scalars().first()
+    next_number = (last.version_number + 1) if last else 1
+    _create_version(db, guide, payload.steps, membership.user_id, version_number=next_number)
+    db.commit()
+    db.refresh(guide)
+    return build_guide_detail(db, guide)
+
+
+@router.get("/guides/{guide_id}/versions", response_model=list[VersionSummary])
+def list_versions(
+    org_id: str,
+    guide_id: str,
+    _m: Membership = Depends(get_membership),
+    db: Session = Depends(get_db),
+) -> list[VersionSummary]:
+    guide = get_guide_or_404(db, org_id, guide_id)
+    rows = db.execute(
+        select(GuideVersion)
+        .where(GuideVersion.guide_id == guide.id)
+        .order_by(GuideVersion.version_number.desc())
+    ).scalars().all()
+    return [
+        VersionSummary(
+            id=v.id,
+            version_number=v.version_number,
+            created_by=v.created_by,
+            created_at=v.created_at,
+            is_current=(v.id == guide.current_version_id),
+        )
+        for v in rows
     ]

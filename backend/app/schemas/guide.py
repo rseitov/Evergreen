@@ -42,3 +42,15 @@ class GuideDetail(BaseModel):
     current_version_id: str
     steps: list[StepOut]
     created_at: datetime
+
+
+class NewVersionRequest(BaseModel):
+    steps: list[StepInput]
+
+
+class VersionSummary(BaseModel):
+    id: str
+    version_number: int
+    created_by: str
+    created_at: datetime
+    is_current: bool
