@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.routers import auth, guides, members, projects, share
+from app.routers import auth, drift, guides, members, projects, share
 
 app = FastAPI(title="Self-Healing SOP API")
 app.include_router(auth.router)
@@ -9,6 +9,7 @@ app.include_router(projects.router)
 app.include_router(guides.router)
 app.include_router(share.org_router)
 app.include_router(share.public_router)
+app.include_router(drift.router)
 
 
 @app.get("/health")

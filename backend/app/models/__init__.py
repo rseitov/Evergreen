@@ -6,6 +6,7 @@ from app.models.guide import Guide
 from app.models.guide_version import GuideVersion
 from app.models.step import Step
 from app.models.share_link import ShareLink
+from app.models.drift_event import DriftEvent
 
 __all__ = [
     "Organization",
@@ -16,4 +17,5 @@ __all__ = [
     "GuideVersion",
     "Step",
     "ShareLink",
+    "DriftEvent",
 ]
