@@ -21,3 +21,16 @@ class DriftEventOut(BaseModel):
     fresh_fingerprint: dict | None
     draft_text: str | None
     created_at: datetime
+
+
+class ObserveRequest(BaseModel):
+    step_id: str
+    fresh_fingerprint: dict
+    source: Literal["passive", "flag"] = "passive"
+
+
+class ObserveResult(BaseModel):
+    drift: bool
+    score: float
+    classification: str
+    event_id: str | None

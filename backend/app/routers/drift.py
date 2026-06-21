@@ -1,11 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.ai.client import AIClient, get_ai_client
+from app.ai.errors import AIGenerationError
 from app.db import get_db
 from app.deps import get_membership, require_role
+from app.drift.scoring import classify, score_drift
 from app.models import DriftEvent, Guide, GuideVersion, Membership, Step
-from app.schemas.drift import DriftCreate, DriftEventOut
+from app.schemas.drift import DriftCreate, DriftEventOut, ObserveRequest, ObserveResult
 
 router = APIRouter(prefix="/orgs/{org_id}/drift", tags=["drift"])
 
@@ -107,3 +110,42 @@ def dismiss_drift(
     db.commit()
     db.refresh(event)
     return _to_out(event)
+
+
+@router.post("/observe", response_model=ObserveResult)
+def observe_drift(
+    org_id: str,
+    payload: ObserveRequest,
+    response: Response,
+    _m: Membership = Depends(require_role("editor")),
+    db: Session = Depends(get_db),
+    ai: AIClient = Depends(get_ai_client),
+) -> ObserveResult:
+    step = _step_in_org_or_404(db, org_id, payload.step_id)
+
+    score = score_drift(step.fingerprint, payload.fresh_fingerprint)
+    cls = classify(score)
+    if cls == "none":
+        return ObserveResult(drift=False, score=score, classification=cls, event_id=None)
+
+    draft_text: str | None = None
+    if cls == "stale":
+        try:
+            draft_text = ai.redraft_step(step.text, payload.fresh_fingerprint.get("dom_anchor"))
+        except AIGenerationError:
+            draft_text = None
+
+    event = DriftEvent(
+        org_id=org_id,
+        step_id=payload.step_id,
+        score=score,
+        source=payload.source,
+        fresh_fingerprint=payload.fresh_fingerprint,
+        draft_text=draft_text,
+        status="open",
+    )
+    db.add(event)
+    db.commit()
+    db.refresh(event)
+    response.status_code = 201
+    return ObserveResult(drift=True, score=score, classification=cls, event_id=event.id)
