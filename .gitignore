@@ -8,3 +8,7 @@ build/
 .env
 *.db
 .DS_Store
+
+# Node / extension
+node_modules/
+extension/dist/
