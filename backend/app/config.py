@@ -8,6 +8,10 @@ class Settings(BaseSettings):
     jwt_secret: str = "change-me"
     jwt_algorithm: str = "HS256"
     access_token_ttl_minutes: int = 1440
+    anthropic_api_key: str = ""
+    ai_model: str = "claude-opus-4-8"
+    ai_max_tokens: int = 4096
+    ai_timeout_seconds: float = 60.0
 
 
 settings = Settings()
