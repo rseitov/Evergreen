@@ -5,6 +5,7 @@ from app.models.project import Project
 from app.models.guide import Guide
 from app.models.guide_version import GuideVersion
 from app.models.step import Step
+from app.models.share_link import ShareLink
 
 __all__ = [
     "Organization",
@@ -14,4 +15,5 @@ __all__ = [
     "Guide",
     "GuideVersion",
     "Step",
+    "ShareLink",
 ]
