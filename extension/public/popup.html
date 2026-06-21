@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { width: 320px; font: 14px sans-serif; padding: 12px; }
+      input, button, select { width: 100%; margin: 4px 0; padding: 6px; box-sizing: border-box; }
+      .hidden { display: none; }
+      #status { color: #555; margin-top: 8px; }
+    </style>
+  </head>
+  <body>
+    <div id="login">
+      <input id="email" type="email" placeholder="Email" />
+      <input id="password" type="password" placeholder="Пароль" />
+      <button id="login-btn">Войти</button>
+    </div>
+    <div id="main" class="hidden">
+      <select id="project"></select>
+      <button id="start-btn">Начать запись</button>
+      <button id="stop-btn" class="hidden">Остановить и собрать гайд</button>
+    </div>
+    <div id="status"></div>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
