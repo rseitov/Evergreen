@@ -1,9 +1,10 @@
 import pytest
 
 from app.ai.client import get_ai_client
+from app.ai.errors import AIGenerationError
 from app.ai.schemas import GeneratedGuide, GeneratedStep
 from app.main import app
-from tests.support.fake_ai import FakeAIClient
+from tests.support.fake_ai import FakeAIClient, RaisingAIClient
 
 
 def _owner_with_project(client):
@@ -100,3 +101,16 @@ def test_generate_unknown_project_404(client):
         headers=h,
     )
     assert resp.status_code == 404
+
+
+def test_generate_ai_generation_error_returns_502(client):
+    org_id, pid, h = _owner_with_project(client)
+    app.dependency_overrides[get_ai_client] = lambda: RaisingAIClient(
+        AIGenerationError("model refused the request")
+    )
+    resp = client.post(
+        f"/orgs/{org_id}/projects/{pid}/guides/generate",
+        json={"type": "digital", "raw_steps": [{"action_text": "a"}]},
+        headers=h,
+    )
+    assert resp.status_code == 502

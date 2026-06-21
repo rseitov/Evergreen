@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.ai.client import AIClient, get_ai_client
+from app.ai.errors import AIGenerationError
 from app.ai.redaction import redact_pii
 from app.ai.schemas import RawStep
 from app.db import get_db
@@ -45,7 +46,10 @@ def generate_guide(
         for s in payload.raw_steps
     ]
 
-    generated = ai.generate_guide(redacted, payload.title_hint, payload.type)
+    try:
+        generated = ai.generate_guide(redacted, payload.title_hint, payload.type)
+    except AIGenerationError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
     if len(generated.steps) != len(redacted):
         raise HTTPException(status_code=502, detail="AI returned a mismatched step count")
 

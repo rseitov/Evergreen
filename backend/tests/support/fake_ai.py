@@ -17,3 +17,15 @@ class FakeAIClient:
         self.received_title_hint = title_hint
         self.received_guide_type = guide_type
         return self._result
+
+
+class RaisingAIClient:
+    """Test double for AIClient that raises a preset exception."""
+
+    def __init__(self, exc: Exception):
+        self._exc = exc
+
+    def generate_guide(
+        self, steps: list[RawStep], title_hint: str | None, guide_type: str
+    ) -> GeneratedGuide:
+        raise self._exc

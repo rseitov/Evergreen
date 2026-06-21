@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     ai_model: str = "claude-opus-4-8"
     ai_max_tokens: int = 4096
     ai_timeout_seconds: float = 60.0
+    ai_max_retries: int = 2
 
 
 settings = Settings()

@@ -1,7 +1,10 @@
 import json
 from types import SimpleNamespace
 
+import pytest
+
 from app.ai.client import AnthropicAIClient
+from app.ai.errors import AIGenerationError
 from app.ai.prompts import build_user_prompt
 from app.ai.schemas import GeneratedGuide, RawStep
 
@@ -18,35 +21,69 @@ def test_build_user_prompt_includes_steps_and_hint():
     assert "digital" in prompt
 
 
+def _response(*, content, stop_reason="end_turn"):
+    return SimpleNamespace(content=content, stop_reason=stop_reason)
+
+
 class _FakeMessages:
-    def __init__(self, payload: str):
-        self._payload = payload
+    def __init__(self, response):
+        self._response = response
         self.last_kwargs: dict | None = None
 
     def create(self, **kwargs):
         self.last_kwargs = kwargs
-        return SimpleNamespace(content=[SimpleNamespace(type="text", text=self._payload)])
+        return self._response
 
 
 class _FakeAnthropic:
-    def __init__(self, payload: str):
-        self.messages = _FakeMessages(payload)
+    def __init__(self, response):
+        self.messages = _FakeMessages(response)
+
+
+def _steps():
+    return [RawStep(action_text="x"), RawStep(action_text="y")]
 
 
 def test_anthropic_client_parses_structured_output():
     payload = json.dumps(
         {"title": "Возврат сделки", "steps": [{"text": "Открыть карточку"}, {"text": "Нажать Сохранить"}]}
     )
-    fake = _FakeAnthropic(payload)
+    fake = _FakeAnthropic(_response(content=[SimpleNamespace(type="text", text=payload)]))
     client = AnthropicAIClient(fake, model="claude-opus-4-8", max_tokens=4096)
 
-    result = client.generate_guide(
-        [RawStep(action_text="x"), RawStep(action_text="y")], title_hint=None, guide_type="digital"
-    )
+    result = client.generate_guide(_steps(), title_hint=None, guide_type="digital")
 
     assert isinstance(result, GeneratedGuide)
     assert result.title == "Возврат сделки"
     assert [s.text for s in result.steps] == ["Открыть карточку", "Нажать Сохранить"]
-    # the SDK was called with the configured model and an output_config schema constraint
     assert fake.messages.last_kwargs["model"] == "claude-opus-4-8"
     assert "output_config" in fake.messages.last_kwargs
+
+
+def test_refusal_raises_generation_error():
+    fake = _FakeAnthropic(_response(content=[], stop_reason="refusal"))
+    client = AnthropicAIClient(fake, model="claude-opus-4-8", max_tokens=4096)
+    with pytest.raises(AIGenerationError):
+        client.generate_guide(_steps(), title_hint=None, guide_type="digital")
+
+
+def test_max_tokens_truncation_raises_generation_error():
+    payload = json.dumps({"title": "x", "steps": [{"text": "a"}]})
+    fake = _FakeAnthropic(_response(content=[SimpleNamespace(type="text", text=payload)], stop_reason="max_tokens"))
+    client = AnthropicAIClient(fake, model="claude-opus-4-8", max_tokens=4096)
+    with pytest.raises(AIGenerationError):
+        client.generate_guide(_steps(), title_hint=None, guide_type="digital")
+
+
+def test_missing_text_block_raises_generation_error():
+    fake = _FakeAnthropic(_response(content=[SimpleNamespace(type="tool_use")]))
+    client = AnthropicAIClient(fake, model="claude-opus-4-8", max_tokens=4096)
+    with pytest.raises(AIGenerationError):
+        client.generate_guide(_steps(), title_hint=None, guide_type="digital")
+
+
+def test_malformed_json_raises_generation_error():
+    fake = _FakeAnthropic(_response(content=[SimpleNamespace(type="text", text="not json at all")]))
+    client = AnthropicAIClient(fake, model="claude-opus-4-8", max_tokens=4096)
+    with pytest.raises(AIGenerationError):
+        client.generate_guide(_steps(), title_hint=None, guide_type="digital")
