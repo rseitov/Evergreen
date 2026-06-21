@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.deps import get_membership, require_role
-from app.models import Guide, GuideVersion, Membership, Step, User
+from app.models import Guide, GuideVersion, Membership, Step
 from app.routers.projects import get_project_or_404
 from app.schemas.guide import (
     GuideCreate,

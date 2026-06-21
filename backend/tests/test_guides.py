@@ -25,7 +25,7 @@ def test_create_and_get_guide(client):
     assert resp.status_code == 201
     detail = resp.json()
     assert detail["version_number"] == 1
-    assert detail["current_version_id"] == detail["current_version_id"]
+    assert detail["current_version_id"]
     assert len(detail["steps"]) == 2
     assert detail["steps"][0]["order_index"] == 0
     assert detail["steps"][1]["order_index"] == 1
