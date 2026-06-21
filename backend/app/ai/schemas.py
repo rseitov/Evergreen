@@ -14,3 +14,7 @@ class GeneratedStep(BaseModel):
 class GeneratedGuide(BaseModel):
     title: str
     steps: list[GeneratedStep]
+
+
+class RedraftedStep(BaseModel):
+    text: str

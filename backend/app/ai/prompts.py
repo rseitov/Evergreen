@@ -19,3 +19,17 @@ def build_user_prompt(steps: list[RawStep], title_hint: str | None, guide_type: 
         anchor = f" [элемент: {s.dom_anchor}]" if s.dom_anchor else ""
         lines.append(f"{i}. {s.action_text}{anchor}")
     return "\n".join(lines)
+
+
+REDRAFT_SYSTEM_PROMPT_V1 = (
+    "Шаг инструкции устарел: элемент интерфейса изменился. "
+    "Перепиши один шаг на русском, в повелительном наклонении, кратко, "
+    "опираясь на новый элемент. Верни только обновлённый текст шага."
+)
+
+
+def build_redraft_prompt(old_text: str, fresh_anchor: dict | None) -> str:
+    lines = [f"Старый шаг: {old_text}"]
+    if fresh_anchor:
+        lines.append(f"Новый элемент: {fresh_anchor}")
+    return "\n".join(lines)

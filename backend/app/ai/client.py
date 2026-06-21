@@ -4,8 +4,13 @@ import anthropic
 from pydantic import ValidationError
 
 from app.ai.errors import AIGenerationError
-from app.ai.prompts import GUIDE_SYSTEM_PROMPT_V1, build_user_prompt
-from app.ai.schemas import GeneratedGuide, RawStep
+from app.ai.prompts import (
+    GUIDE_SYSTEM_PROMPT_V1,
+    REDRAFT_SYSTEM_PROMPT_V1,
+    build_redraft_prompt,
+    build_user_prompt,
+)
+from app.ai.schemas import GeneratedGuide, RawStep, RedraftedStep
 from app.config import settings
 
 
@@ -13,6 +18,8 @@ class AIClient(Protocol):
     def generate_guide(
         self, steps: list[RawStep], title_hint: str | None, guide_type: str
     ) -> GeneratedGuide: ...
+
+    def redraft_step(self, old_text: str, fresh_anchor: dict | None) -> str: ...
 
 
 class AnthropicAIClient:
@@ -45,6 +52,30 @@ class AnthropicAIClient:
             raise AIGenerationError("model returned no text block")
         try:
             return GeneratedGuide.model_validate_json(text)
+        except ValidationError as exc:
+            raise AIGenerationError("model returned malformed output") from exc
+
+    def redraft_step(self, old_text: str, fresh_anchor: dict | None) -> str:
+        user_prompt = build_redraft_prompt(old_text, fresh_anchor)
+        response = self._client.messages.create(
+            model=self._model,
+            max_tokens=self._max_tokens,
+            system=REDRAFT_SYSTEM_PROMPT_V1,
+            messages=[{"role": "user", "content": user_prompt}],
+            output_config={
+                "format": {"type": "json_schema", "schema": RedraftedStep.model_json_schema()}
+            },
+        )
+        stop_reason = getattr(response, "stop_reason", None)
+        if stop_reason == "refusal":
+            raise AIGenerationError("model refused the request")
+        if stop_reason == "max_tokens":
+            raise AIGenerationError("model response was truncated (max_tokens)")
+        text = next((block.text for block in response.content if block.type == "text"), None)
+        if text is None:
+            raise AIGenerationError("model returned no text block")
+        try:
+            return RedraftedStep.model_validate_json(text).text
         except ValidationError as exc:
             raise AIGenerationError("model returned malformed output") from exc
 
