@@ -108,4 +108,12 @@ export class ApiClient {
       token,
     });
   }
+
+  flagDrift(token: string, orgId: string, stepId: string): Promise<DriftEventOut> {
+    return this.request<DriftEventOut>(`/orgs/${orgId}/drift/flag`, {
+      method: "POST",
+      body: { step_id: stepId },
+      token,
+    });
+  }
 }

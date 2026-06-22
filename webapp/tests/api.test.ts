@@ -57,6 +57,20 @@ describe("ApiClient", () => {
     expect(f.mock.calls[0][0]).toBe("http://localhost:8077/orgs/o1/drift?status=open");
   });
 
+  it("flagDrift posts the step id to the flag endpoint", async () => {
+    const f = mockFetch(201, {
+      id: "d1", step_id: "s1", score: 1, source: "flag", status: "open",
+      fresh_fingerprint: null, draft_text: null, created_at: "",
+    });
+    const res = await api().flagDrift("tok", "o1", "s1");
+    expect(res.id).toBe("d1");
+    const [url, init] = f.mock.calls[0];
+    expect(url).toBe("http://localhost:8077/orgs/o1/drift/flag");
+    expect(init.method).toBe("POST");
+    expect(init.headers.Authorization).toBe("Bearer tok");
+    expect(JSON.parse(init.body)).toEqual({ step_id: "s1" });
+  });
+
   it("non-2xx throws ApiError with status", async () => {
     mockFetch(401, { detail: "bad" });
     await expect(api().me("tok")).rejects.toBeInstanceOf(ApiError);
