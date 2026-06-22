@@ -8,7 +8,7 @@ from app.db import get_db
 from app.deps import get_membership, require_role
 from app.drift.scoring import classify, score_drift
 from app.models import DriftEvent, Guide, GuideVersion, Membership, Step
-from app.schemas.drift import DriftCreate, DriftEventOut, ObserveRequest, ObserveResult
+from app.schemas.drift import DriftCreate, DriftEventOut, FlagRequest, ObserveRequest, ObserveResult
 
 router = APIRouter(prefix="/orgs/{org_id}/drift", tags=["drift"])
 
@@ -149,3 +149,26 @@ def observe_drift(
     db.refresh(event)
     response.status_code = 201
     return ObserveResult(drift=True, score=score, classification=cls, event_id=event.id)
+
+
+@router.post("/flag", response_model=DriftEventOut, status_code=201)
+def flag_drift(
+    org_id: str,
+    payload: FlagRequest,
+    _m: Membership = Depends(require_role("editor")),
+    db: Session = Depends(get_db),
+) -> DriftEventOut:
+    _step_in_org_or_404(db, org_id, payload.step_id)
+    event = DriftEvent(
+        org_id=org_id,
+        step_id=payload.step_id,
+        score=1.0,
+        source="flag",
+        fresh_fingerprint=None,
+        draft_text=None,
+        status="open",
+    )
+    db.add(event)
+    db.commit()
+    db.refresh(event)
+    return _to_out(event)

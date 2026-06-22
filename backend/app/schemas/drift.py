@@ -34,3 +34,7 @@ class ObserveResult(BaseModel):
     score: float
     classification: str
     event_id: str | None
+
+
+class FlagRequest(BaseModel):
+    step_id: str
