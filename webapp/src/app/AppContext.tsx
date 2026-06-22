@@ -1,6 +1,6 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { ApiClient } from "../lib/api";
-import { clearToken, loadToken, saveToken } from "../lib/session";
+import { clearOrgId, clearToken, loadOrgId, loadToken, saveOrgId, saveToken } from "../lib/session";
 
 export interface AppValue {
   api: ApiClient;
@@ -16,12 +16,17 @@ const AppContext = createContext<AppValue | null>(null);
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8077";
 
 export function AppProvider({ value, children }: { value?: AppValue; children: ReactNode }) {
+  const api = useMemo(() => new ApiClient(BASE_URL), []);
   const [token, setToken] = useState<string | null>(() => loadToken());
-  const [orgId, setOrgId] = useState<string | null>(null);
+  const [orgId, setOrgIdState] = useState<string | null>(() => loadOrgId());
 
-  const built = useMemo<AppValue>(() => {
-    const api = new ApiClient(BASE_URL);
-    return {
+  const setOrgId = useCallback((id: string) => {
+    saveOrgId(id);
+    setOrgIdState(id);
+  }, []);
+
+  const built = useMemo<AppValue>(
+    () => ({
       api,
       token,
       orgId,
@@ -32,11 +37,14 @@ export function AppProvider({ value, children }: { value?: AppValue; children: R
       },
       logout() {
         clearToken();
+        clearOrgId();
         setToken(null);
+        setOrgIdState(null);
       },
       setOrgId,
-    };
-  }, [token, orgId]);
+    }),
+    [api, token, orgId, setOrgId],
+  );
 
   return <AppContext.Provider value={value ?? built}>{children}</AppContext.Provider>;
 }
