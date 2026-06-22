@@ -15,6 +15,31 @@ function renderGuide(api: unknown) {
 }
 
 describe("GuidePage", () => {
+  it("flags a step as gone via loop C", async () => {
+    const api = {
+      getGuide: vi.fn().mockResolvedValue({
+        id: "g1", title: "Возврат сделки", type: "digital", project_id: "p1",
+        version_number: 1, current_version_id: "v1",
+        steps: [{ id: "s1", order_index: 0, text: "Открыть карточку", media_url: null, fingerprint: null }],
+        created_at: "",
+      }),
+      listVersions: vi.fn().mockResolvedValue([
+        { id: "v1", version_number: 1, created_by: "u1", created_at: "", is_current: true },
+      ]),
+      flagDrift: vi.fn().mockResolvedValue({
+        id: "d1", step_id: "s1", score: 1, source: "flag", status: "open",
+        fresh_fingerprint: null, draft_text: null, created_at: "",
+      }),
+    };
+    renderGuide(api);
+
+    await screen.findByText("Открыть карточку");
+    await userEvent.click(screen.getByRole("button", { name: "этого больше нет" }));
+
+    await waitFor(() => expect(api.flagDrift).toHaveBeenCalledWith("test-token", "o1", "s1"));
+    expect(await screen.findByText("Помечено как устаревший")).toBeInTheDocument();
+  });
+
   it("renders steps and versions and creates a share link", async () => {
     const api = {
       getGuide: vi.fn().mockResolvedValue({

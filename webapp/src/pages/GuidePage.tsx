@@ -9,6 +9,7 @@ export default function GuidePage() {
   const [guide, setGuide] = useState<GuideDetail | null>(null);
   const [versions, setVersions] = useState<VersionSummary[]>([]);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [flagged, setFlagged] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let active = true;
@@ -33,6 +34,12 @@ export default function GuidePage() {
     setShareUrl(link.url_path);
   }
 
+  async function flag(stepId: string) {
+    if (!app.token || !app.orgId) return;
+    await app.api.flagDrift(app.token, app.orgId, stepId);
+    setFlagged((prev) => new Set(prev).add(stepId));
+  }
+
   if (!guide) return <p>Загрузка…</p>;
 
   return (
@@ -41,7 +48,16 @@ export default function GuidePage() {
       <p>Версия {guide.version_number}</p>
       <ol>
         {guide.steps.map((s) => (
-          <li key={s.id}>{s.text}</li>
+          <li key={s.id}>
+            {s.text}{" "}
+            {flagged.has(s.id) ? (
+              <span>Помечено как устаревший</span>
+            ) : (
+              <button type="button" onClick={() => flag(s.id)}>
+                этого больше нет
+              </button>
+            )}
+          </li>
         ))}
       </ol>
       <Link to={`/guides/${guide.id}/edit`}>Редактировать</Link>
