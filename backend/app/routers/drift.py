@@ -8,7 +8,9 @@ from app.db import get_db
 from app.deps import get_membership, require_role
 from app.drift.scoring import classify, score_drift
 from app.models import DriftEvent, Guide, GuideVersion, Membership, Step
+from app.routers.guides import _create_version
 from app.schemas.drift import DriftCreate, DriftEventOut, FlagRequest, ObserveRequest, ObserveResult
+from app.schemas.guide import StepInput
 
 router = APIRouter(prefix="/orgs/{org_id}/drift", tags=["drift"])
 
@@ -84,14 +86,45 @@ def list_drift(
     return [_to_out(e) for e in rows]
 
 
+def _apply_draft_as_new_version(db: Session, event: DriftEvent, user_id: str) -> None:
+    drifted = db.get(Step, event.step_id)
+    if drifted is None:
+        return
+    version = db.get(GuideVersion, drifted.version_id)
+    guide = db.get(Guide, version.guide_id)
+    current_steps = db.execute(
+        select(Step)
+        .where(Step.version_id == guide.current_version_id)
+        .order_by(Step.order_index)
+    ).scalars().all()
+
+    new_steps = [
+        StepInput(
+            text=event.draft_text if s.order_index == drifted.order_index else s.text,
+            media_url=s.media_url,
+            fingerprint=s.fingerprint,
+        )
+        for s in current_steps
+    ]
+    last = db.execute(
+        select(GuideVersion)
+        .where(GuideVersion.guide_id == guide.id)
+        .order_by(GuideVersion.version_number.desc())
+    ).scalars().first()
+    next_number = (last.version_number + 1) if last else 1
+    _create_version(db, guide, new_steps, user_id, version_number=next_number)
+
+
 @router.post("/{event_id}/accept", response_model=DriftEventOut)
 def accept_drift(
     org_id: str,
     event_id: str,
-    _m: Membership = Depends(require_role("editor")),
+    membership: Membership = Depends(require_role("editor")),
     db: Session = Depends(get_db),
 ) -> DriftEventOut:
     event = _get_event_or_404(db, org_id, event_id)
+    if event.draft_text:
+        _apply_draft_as_new_version(db, event, membership.user_id)
     event.status = "accepted"
     db.commit()
     db.refresh(event)
