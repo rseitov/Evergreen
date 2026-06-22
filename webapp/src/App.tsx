@@ -1,4 +1,4 @@
-import { Link, Route, Routes } from "react-router-dom";
+import { Link, Navigate, Route, Routes } from "react-router-dom";
 import RequireAuth from "./app/RequireAuth";
 import { useApp } from "./app/AppContext";
 import LoginPage from "./pages/LoginPage";
@@ -32,6 +32,7 @@ export default function App() {
         <Route path="/guides/:guideId" element={<RequireAuth><GuidePage /></RequireAuth>} />
         <Route path="/guides/:guideId/edit" element={<RequireAuth><GuideEditorPage /></RequireAuth>} />
         <Route path="/drift" element={<RequireAuth><DriftPage /></RequireAuth>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
   );

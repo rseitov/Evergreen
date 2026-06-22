@@ -19,4 +19,9 @@ describe("App routing", () => {
     renderWithProviders(<App />, { value: makeAppValue({ token: null, api: api as never }), route: "/share/abc" });
     expect(await screen.findByText("Публичный")).toBeInTheDocument();
   });
+
+  it("redirects unknown paths (unauthenticated lands on login)", () => {
+    renderWithProviders(<App />, { value: makeAppValue({ token: null }), route: "/totally/unknown" });
+    expect(screen.getByText("Вход")).toBeInTheDocument();
+  });
 });
