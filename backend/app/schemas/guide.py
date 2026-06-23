@@ -8,6 +8,7 @@ class StepInput(BaseModel):
     text: str
     media_url: str | None = None
     fingerprint: dict | None = None
+    url: str | None = None
 
 
 class StepOut(BaseModel):
@@ -16,6 +17,7 @@ class StepOut(BaseModel):
     text: str
     media_url: str | None
     fingerprint: dict | None
+    url: str | None
 
 
 class GuideCreate(BaseModel):

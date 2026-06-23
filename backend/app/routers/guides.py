@@ -40,6 +40,7 @@ def _create_version(db: Session, guide: Guide, steps: list[StepInput], user_id: 
                 text=s.text,
                 media_url=s.media_url,
                 fingerprint=s.fingerprint,
+                url=s.url,
             )
         )
     guide.current_version_id = version.id
@@ -65,6 +66,7 @@ def build_guide_detail(db: Session, guide: Guide) -> GuideDetail:
                 text=s.text,
                 media_url=s.media_url,
                 fingerprint=s.fingerprint,
+                url=s.url,
             )
             for s in steps
         ],

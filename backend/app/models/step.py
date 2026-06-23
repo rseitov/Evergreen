@@ -16,5 +16,6 @@ class Step(Base):
     order_index: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     media_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     fingerprint: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
