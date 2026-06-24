@@ -1,4 +1,13 @@
-import type { AuthResult, GenerateRequest, GuideDetailLite, MeResponse, Project } from "./types";
+import type {
+  AuthResult,
+  Fingerprint,
+  GenerateRequest,
+  GuideDetailLite,
+  MeResponse,
+  ObservableStep,
+  ObserveResult,
+  Project,
+} from "./types";
 
 export class ApiError extends Error {
   constructor(public status: number) {
@@ -54,5 +63,24 @@ export class ApiClient {
       `/orgs/${orgId}/projects/${projectId}/guides/generate`,
       { method: "POST", body, token },
     );
+  }
+
+  listObservable(token: string, orgId: string, url: string): Promise<ObservableStep[]> {
+    return this.request<ObservableStep[]>(
+      `/orgs/${orgId}/steps/observable?url=${encodeURIComponent(url)}`,
+      { token },
+    );
+  }
+
+  observeDrift(
+    token: string,
+    orgId: string,
+    body: { step_id: string; fresh_fingerprint: Fingerprint; source: "passive" },
+  ): Promise<ObserveResult> {
+    return this.request<ObserveResult>(`/orgs/${orgId}/drift/observe`, {
+      method: "POST",
+      body,
+      token,
+    });
   }
 }

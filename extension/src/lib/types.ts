@@ -46,3 +46,24 @@ export interface GuideDetailLite {
   title: string;
   version_number: number;
 }
+
+export interface Fingerprint {
+  dom_anchor: DomAnchor | null;
+  semantics: string;
+  screenshot_url: string | null;
+  url: string | null;
+}
+
+export interface ObservableStep {
+  step_id: string;
+  guide_id: string;
+  url: string | null;
+  fingerprint: Fingerprint | null;
+}
+
+export interface ObserveResult {
+  drift: boolean;
+  score: number;
+  classification: string;
+  event_id: string | null;
+}
