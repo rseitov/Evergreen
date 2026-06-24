@@ -103,6 +103,27 @@ def test_generate_unknown_project_404(client):
     assert resp.status_code == 404
 
 
+def test_generate_stores_step_url_and_fingerprint(client):
+    org_id, pid, h = _owner_with_project(client)
+    _use_fake(
+        GeneratedGuide(title="G", steps=[GeneratedStep(text="Открыть сделку")])
+    )
+    resp = client.post(
+        f"/orgs/{org_id}/projects/{pid}/guides/generate",
+        json={
+            "type": "digital",
+            "raw_steps": [
+                {"action_text": "клик по сделке", "url": "https://crm.acme.ru/deals/1"}
+            ],
+        },
+        headers=h,
+    )
+    assert resp.status_code == 201
+    step = resp.json()["steps"][0]
+    assert step["url"] == "https://crm.acme.ru/deals/1"
+    assert step["fingerprint"]["url"] == "https://crm.acme.ru/deals/1"
+
+
 def test_generate_ai_generation_error_returns_502(client):
     org_id, pid, h = _owner_with_project(client)
     app.dependency_overrides[get_ai_client] = lambda: RaisingAIClient(

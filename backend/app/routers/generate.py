@@ -21,6 +21,7 @@ def _build_fingerprint(raw: RawStep, generated_text: str) -> dict:
         "dom_anchor": raw.dom_anchor,
         "semantics": generated_text,
         "screenshot_url": raw.screenshot_url,
+        "url": raw.url,
     }
 
 
@@ -42,6 +43,7 @@ def generate_guide(
             action_text=redact_pii(s.action_text),
             dom_anchor=s.dom_anchor,
             screenshot_url=s.screenshot_url,
+            url=s.url,
         )
         for s in payload.raw_steps
     ]
@@ -62,6 +64,7 @@ def generate_guide(
             text=g.text,
             media_url=r.screenshot_url,
             fingerprint=_build_fingerprint(r, g.text),
+            url=r.url,
         )
         for g, r in zip(generated.steps, redacted)
     ]
