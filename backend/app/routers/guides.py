@@ -1,16 +1,19 @@
+from urllib.parse import urlparse
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.deps import get_membership, require_role
-from app.models import Guide, GuideVersion, Membership, Step
+from app.models import Guide, GuideVersion, Membership, Project, Step
 from app.routers.projects import get_project_or_404
 from app.schemas.guide import (
     GuideCreate,
     GuideDetail,
     GuideSummary,
     NewVersionRequest,
+    ObservableStep,
     StepInput,
     StepOut,
     VersionSummary,
@@ -170,3 +173,33 @@ def list_versions(
         )
         for v in rows
     ]
+
+
+@router.get("/steps/observable", response_model=list[ObservableStep])
+def list_observable_steps(
+    org_id: str,
+    url: str,
+    _m: Membership = Depends(get_membership),
+    db: Session = Depends(get_db),
+) -> list[ObservableStep]:
+    host = urlparse(url).hostname
+    if not host:
+        return []
+    rows = db.execute(
+        select(Step, Guide)
+        .join(Guide, Guide.current_version_id == Step.version_id)
+        .where(Guide.org_id == org_id, Step.url == url)
+    ).all()
+    out: list[ObservableStep] = []
+    for step, guide in rows:
+        project = db.get(Project, guide.project_id)
+        if project is not None and host in (project.allowlist_domains or []):
+            out.append(
+                ObservableStep(
+                    step_id=step.id,
+                    guide_id=guide.id,
+                    url=step.url,
+                    fingerprint=step.fingerprint,
+                )
+            )
+    return out

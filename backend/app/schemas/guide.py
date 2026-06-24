@@ -56,3 +56,10 @@ class VersionSummary(BaseModel):
     created_by: str
     created_at: datetime
     is_current: bool
+
+
+class ObservableStep(BaseModel):
+    step_id: str
+    guide_id: str
+    url: str | None
+    fingerprint: dict | None
