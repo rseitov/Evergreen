@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { RecordingService } from "../src/background";
+import { RecordingService, handleDriftMessage } from "../src/background";
 import type { Session } from "../src/lib/storage";
 import type { RawStep } from "../src/lib/types";
 
@@ -10,6 +10,30 @@ const session = (over: Partial<Session> = {}): Session => ({
   orgId: "o1",
   projectId: "p1",
   ...over,
+});
+
+describe("handleDriftMessage", () => {
+  it("routes drift.observable to ApiClient.listObservable", async () => {
+    const api = { listObservable: vi.fn().mockResolvedValue([{ step_id: "s1" }]), observeDrift: vi.fn() };
+    const res = await handleDriftMessage(api as never, {
+      type: "drift.observable", token: "tok", orgId: "o1", url: "https://x/1",
+    });
+    expect(api.listObservable).toHaveBeenCalledWith("tok", "o1", "https://x/1");
+    expect(res).toEqual([{ step_id: "s1" }]);
+  });
+
+  it("routes drift.observe to ApiClient.observeDrift", async () => {
+    const body = { step_id: "s1", fresh_fingerprint: { dom_anchor: null, semantics: "", screenshot_url: null, url: "u" }, source: "passive" };
+    const api = { listObservable: vi.fn(), observeDrift: vi.fn().mockResolvedValue({ drift: false }) };
+    const res = await handleDriftMessage(api as never, { type: "drift.observe", token: "tok", orgId: "o1", body });
+    expect(api.observeDrift).toHaveBeenCalledWith("tok", "o1", body);
+    expect(res).toEqual({ drift: false });
+  });
+
+  it("returns null for unrelated messages", async () => {
+    const api = { listObservable: vi.fn(), observeDrift: vi.fn() };
+    expect(await handleDriftMessage(api as never, { type: "step" })).toBeNull();
+  });
 });
 
 describe("RecordingService", () => {
