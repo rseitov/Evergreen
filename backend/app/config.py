@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     ai_max_tokens: int = 4096
     ai_timeout_seconds: float = 60.0
     ai_max_retries: int = 2
+    # Comma-separated list of browser origins allowed to call the API (the web app).
+    cors_origins: str = "http://localhost:5173"
 
 
 settings = Settings()

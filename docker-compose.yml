@@ -1,0 +1,45 @@
+# Self-Healing SOP — full local stack: Postgres + backend API + web app.
+# The browser extension is not containerized (it's loaded unpacked into Chrome);
+# see README.md.
+services:
+  pg:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: selfhealing
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@pg:5432/selfhealing
+      # CHANGE THIS in any non-local deployment. Generate: python -c "import secrets; print(secrets.token_urlsafe(32))"
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-32bytes-minimum-xxxxx}
+      # Required only for real AI generation / the eval harness; empty is fine for the rest.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Allow the web app origin to call the API (CORS).
+      CORS_ORIGINS: http://localhost:5173
+    depends_on:
+      pg:
+        condition: service_healthy
+    ports:
+      - "8077:8000"
+
+  web:
+    build:
+      context: ./webapp
+      args:
+        VITE_API_BASE_URL: http://localhost:8077
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  pgdata:
