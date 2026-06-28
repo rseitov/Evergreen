@@ -40,35 +40,47 @@ export default function GuidePage() {
     setFlagged((prev) => new Set(prev).add(stepId));
   }
 
-  if (!guide) return <p>Загрузка…</p>;
+  if (!guide) return <p className="loading">Загрузка…</p>;
 
   return (
-    <div>
-      <h1>{guide.title}</h1>
-      <p>Версия {guide.version_number}</p>
-      <ol>
+    <div className="page">
+      <div className="page-head">
+        <p className="eyebrow">Регламент</p>
+        <h1>{guide.title}</h1>
+        <div className="btn-row" style={{ marginTop: 12 }}>
+          <span className="vchip">Версия {guide.version_number}</span>
+        </div>
+      </div>
+
+      <ol className="steps">
         {guide.steps.map((s) => (
           <li key={s.id}>
-            {s.text}{" "}
+            <div className="step-body">{s.text}</div>
             {flagged.has(s.id) ? (
-              <span>Помечено как устаревший</span>
+              <span className="step-flagged">Помечено как устаревший</span>
             ) : (
-              <button type="button" onClick={() => flag(s.id)}>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => flag(s.id)}>
                 этого больше нет
               </button>
             )}
           </li>
         ))}
       </ol>
-      <Link to={`/guides/${guide.id}/edit`}>Редактировать</Link>
-      <button type="button" onClick={makeLink}>
-        Создать ссылку
-      </button>
-      {shareUrl && <p>{shareUrl}</p>}
-      <h2>История версий</h2>
-      <ul>
+
+      <div className="btn-row">
+        <Link className="btn btn-ghost" to={`/guides/${guide.id}/edit`}>
+          Редактировать
+        </Link>
+        <button type="button" className="btn" onClick={makeLink}>
+          Создать ссылку
+        </button>
+      </div>
+      {shareUrl && <p className="share-out">{shareUrl}</p>}
+
+      <p className="section-label">История версий</p>
+      <ul className="versions">
         {versions.map((v) => (
-          <li key={v.id}>
+          <li key={v.id} className={v.is_current ? "is-current" : ""}>
             Версия {v.version_number}
             {v.is_current ? " (текущая)" : ""}
           </li>

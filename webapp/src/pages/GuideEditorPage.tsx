@@ -37,13 +37,19 @@ export default function GuideEditorPage() {
     navigate(`/guides/${guideId}`);
   }
 
-  if (!steps) return <p>Загрузка…</p>;
+  if (!steps) return <p className="loading">Загрузка…</p>;
 
   return (
-    <div>
-      <h1>Редактирование</h1>
+    <div className="page">
+      <div className="page-head">
+        <p className="eyebrow">Редактирование</p>
+        <h1>Шаги регламента</h1>
+        <p className="sub">Сохранение создаёт новую версию — прежние остаются в истории.</p>
+      </div>
+
       {steps.map((s, i) => (
-        <div key={i}>
+        <div className="editor-step" key={i}>
+          <span className="num">{String(i + 1).padStart(2, "0")}</span>
           <textarea
             aria-label={`Шаг ${i + 1}`}
             value={s.text}
@@ -51,12 +57,15 @@ export default function GuideEditorPage() {
           />
         </div>
       ))}
-      <button type="button" onClick={addStep}>
-        Добавить шаг
-      </button>
-      <button type="button" onClick={save}>
-        Сохранить новую версию
-      </button>
+
+      <div className="btn-row">
+        <button type="button" className="btn btn-ghost" onClick={addStep}>
+          Добавить шаг
+        </button>
+        <button type="button" className="btn" onClick={save}>
+          Сохранить новую версию
+        </button>
+      </div>
     </div>
   );
 }

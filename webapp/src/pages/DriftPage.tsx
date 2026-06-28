@@ -32,20 +32,38 @@ export default function DriftPage() {
   }
 
   return (
-    <div>
-      <h1>Что устарело</h1>
-      {events.length === 0 && <p>Нет открытых расхождений.</p>}
-      <ul>
+    <div className="page">
+      <div className="page-head">
+        <p className="eyebrow">Анти-устаревание</p>
+        <h1>Что устарело</h1>
+        <p className="sub">Расхождения, которые нашёл агент или отметили сотрудники. Примите черновик — выйдет новая версия.</p>
+      </div>
+
+      {events.length === 0 && <p className="empty">Нет открытых расхождений.</p>}
+
+      <ul className="drift-list">
         {events.map((e) => (
-          <li key={e.id}>
-            <span>Похоже устарел (score {e.score.toFixed(2)})</span>
-            {e.draft_text && <p>{e.draft_text}</p>}
-            <button type="button" onClick={() => accept(e.id)}>
-              Принять
-            </button>
-            <button type="button" onClick={() => dismiss(e.id)}>
-              Отклонить
-            </button>
+          <li className="drift-card" key={e.id}>
+            <div className="drift-top">
+              <span className={`score ${e.score > 0.5 ? "score--stale" : "score--soft"}`}>
+                {e.score.toFixed(2)}
+              </span>
+              <span className="drift-status">Похоже устарел</span>
+            </div>
+            {e.draft_text && (
+              <div className="drift-draft">
+                <span className="label">Черновик обновления</span>
+                <p className="draft-text">{e.draft_text}</p>
+              </div>
+            )}
+            <div className="btn-row">
+              <button type="button" className="btn" onClick={() => accept(e.id)}>
+                Принять
+              </button>
+              <button type="button" className="btn btn-danger" onClick={() => dismiss(e.id)}>
+                Отклонить
+              </button>
+            </div>
           </li>
         ))}
       </ul>

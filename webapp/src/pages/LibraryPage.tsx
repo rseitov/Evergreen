@@ -35,21 +35,35 @@ export default function LibraryPage() {
     };
   }, [app]);
 
-  if (!data) return <p>Загрузка…</p>;
+  if (!data) return <p className="loading">Загрузка…</p>;
 
   return (
-    <div>
-      <h1>Библиотека регламентов</h1>
+    <div className="page">
+      <div className="page-head">
+        <p className="eyebrow">Рабочее пространство</p>
+        <h1>Библиотека регламентов</h1>
+        <p className="sub">Гайды сгруппированы по проектам. Откройте, чтобы увидеть шаги, версии и поделиться.</p>
+      </div>
+      {data.length === 0 && (
+        <p className="empty">Пока нет проектов. Запишите процесс в расширении или создайте гайд через API.</p>
+      )}
       {data.map(({ project, guides }) => (
-        <section key={project.id}>
-          <h2>{project.name}</h2>
-          <ul>
-            {guides.map((g) => (
-              <li key={g.id}>
-                <Link to={`/guides/${g.id}`}>{g.title}</Link>
-              </li>
-            ))}
-          </ul>
+        <section className="project" key={project.id}>
+          <div className="project-head">
+            <h2>{project.name}</h2>
+            <span className="count mono">{guides.length}</span>
+          </div>
+          {guides.length === 0 ? (
+            <p className="empty">В этом проекте пока нет гайдов.</p>
+          ) : (
+            <ul className="guide-list">
+              {guides.map((g) => (
+                <li key={g.id}>
+                  <Link to={`/guides/${g.id}`}>{g.title}</Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       ))}
     </div>
